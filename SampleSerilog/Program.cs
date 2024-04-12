@@ -1,5 +1,8 @@
 using SampleSerilog.Middleware;
+using SampleSerilog.Services;
 using Serilog;
+using Serilog.Formatting.Json;
+using Serilog.Sinks.File;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,16 +19,16 @@ IConfiguration configuration = new ConfigurationBuilder()
     .Build();
 
 Log.Logger = new LoggerConfiguration()
-    .ReadFrom
-    .Configuration(configuration)
+    .ReadFrom.Configuration(configuration)
+    .WriteTo.File(new JsonFormatter(), path: @"c:\temp\logs\SampleSerilog.json", shared: false)
     .Enrich.FromLogContext()
     .CreateLogger();
 
 builder.Host.UseSerilog();
 
+builder.Services.AddScoped<IBookServices, BookServices>();
 
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddControllersWithViews();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -33,13 +36,13 @@ builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-//app.UseLogUserInfoMiddleware();
+
+app.UseExceptionHandlerMiddleware();
 
 app.UseLogUserNameMiddleware();
 
@@ -49,5 +52,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
 
 app.Run();
